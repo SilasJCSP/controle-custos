@@ -1,0 +1,1 @@
+"""Nova camada de arquitetura compatível com os módulos legados."""

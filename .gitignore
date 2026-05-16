@@ -1,0 +1,21 @@
+# ambiente virtual
+.venv/
+venv/
+
+# credenciais
+credenciais.json
+google_oauth_client.json
+*.token.json
+.env
+
+# outputs
+output/
+logs/
+database/*.db
+database/*.sqlite
+database/*.sqlite3
+dados/faturas/
+
+# python
+__pycache__/
+*.pyc
