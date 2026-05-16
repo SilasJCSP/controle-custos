@@ -24,8 +24,8 @@ class AppSettings(BaseSettings):
     gmail_cache_dir: Path = Field(default=Path(__file__).resolve().parents[1] / "output" / "gmail_cache")
     drive_cache_dir: Path = Field(default=Path(__file__).resolve().parents[1] / "output" / "drive_cache")
 
-    drive_folder_id: str = Field(default="13CFfwPVGG5VfiG1ns3Zqb_dhKonl5lbp")
-    sheets_spreadsheet_id: str = Field(default="18SiI5PQF8Je1Bab8hkZorU_IDsrVhoY9qTgvRPdZvnI")
+    drive_folder_id: str = Field(default="")
+    sheets_spreadsheet_id: str = Field(default="")
     sheets_name: str = Field(default="Controle de Gastos")
     sheets_data_tab: str = Field(default="Dados")
     sheets_control_tab: str = Field(default="processamento")

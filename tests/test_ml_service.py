@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-import ml.service as ml_service
+import app.ml.service as ml_service
 
 
 def test_prever_categoria_sem_modelo(tmp_path, monkeypatch):

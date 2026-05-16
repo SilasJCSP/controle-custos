@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import time
 from pathlib import Path
@@ -12,7 +13,7 @@ from config import OUTPUT_CSV, OUTPUT_DIR, OUTPUT_TRANSACOES_CSV
 from data_source.drive import listar_faturas, ler_texto_fatura
 from data_source.models import FaturaFonte
 from data_source.sheets import carregar_processados, ler_gastos, registrar_processado, inserir_transacoes_sheets
-from app.parsers import generico, mercado_pago, santander, nubank
+from app.parsers import GenericoParser, MercadoPagoParser, NubankParser, SantanderParser
 from app.repositories.sqlite_repository import (
     buscar_transacoes,
     init_repository,
@@ -36,6 +37,13 @@ COLUNAS_FINAIS = [
     "origem",
     "tipo_lancamento",
 ]
+
+
+def _hash_pdf(caminho) -> str:
+    try:
+        return hashlib.sha1(Path(caminho).read_bytes()).hexdigest()
+    except Exception:
+        return ""
 
 
 def _deve_ignorar_transacao(descricao: str) -> bool:
@@ -129,20 +137,20 @@ def _gerar_ids_em_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 def _selecionar_parser(fonte: FaturaFonte, texto_bruto: str):
     banco = (fonte.banco or "").lower()
     if banco == "santander":
-        return santander.parse
+        return SantanderParser()
     if banco == "mercado_pago":
-        return mercado_pago.parse
+        return MercadoPagoParser()
     if banco == "nubank":
-        return nubank.parse
+        return NubankParser()
 
     texto = f"{fonte.nome_arquivo} {texto_bruto}".lower()
     if "santander" in texto:
-        return santander.parse
+        return SantanderParser()
     if "mercado" in texto:
-        return mercado_pago.parse
+        return MercadoPagoParser()
     if "nubank" in texto:
-        return nubank.parse
-    return generico.parse
+        return NubankParser()
+    return GenericoParser()
 
 
 def _normalizar_transacoes(df: pd.DataFrame, origem: str, nome_arquivo: str, banco: str) -> pd.DataFrame:
@@ -260,17 +268,31 @@ def run_pipeline(ano_referencia: int | None = None) -> None:
 
         parser = _selecionar_parser(fonte, texto_bruto)
         try:
-            df_parsed = parser(fonte.caminho_local, ano_referencia=ano_referencia)
+            df_parsed = parser.parse(fonte.caminho_local, ano_referencia=ano_referencia)
         except Exception as exc:
-            logger.warning("  ✗ Falha ao parsear com %s: %s", parser.__name__, exc)
+            logger.warning("  ✗ Falha ao parsear com %s: %s", type(parser).__name__, exc)
             registrar_processado(fonte.identificador, fonte.nome_arquivo, fonte.origem)
-            registrar_importacao(fonte.identificador, fonte.nome_arquivo, fonte.origem, "erro", str(exc))
+            registrar_importacao(
+                arquivo=fonte.nome_arquivo,
+                hash_arquivo=_hash_pdf(fonte.caminho_local),
+                banco=fonte.banco or "generico",
+                qtd_transacoes=0,
+                status="erro",
+                erro=str(exc),
+            )
             continue
 
         if df_parsed.empty:
             logger.info("  ⊘ Nenhuma transação extraída.")
             registrar_processado(fonte.identificador, fonte.nome_arquivo, fonte.origem)
-            registrar_importacao(fonte.identificador, fonte.nome_arquivo, fonte.origem, "vazio", "nenhuma transacao extraida")
+            registrar_importacao(
+                arquivo=fonte.nome_arquivo,
+                hash_arquivo=_hash_pdf(fonte.caminho_local),
+                banco=fonte.banco or "generico",
+                qtd_transacoes=0,
+                status="vazio",
+                erro="nenhuma transacao extraida",
+            )
             continue
 
         df_normalizado = _normalizar_transacoes(
@@ -282,14 +304,28 @@ def run_pipeline(ano_referencia: int | None = None) -> None:
         if df_normalizado.empty:
             logger.info("  ⊘ Todas as transações foram descartadas (inválidas).")
             registrar_processado(fonte.identificador, fonte.nome_arquivo, fonte.origem)
-            registrar_importacao(fonte.identificador, fonte.nome_arquivo, fonte.origem, "descartado", "todas as transacoes invalidas")
+            registrar_importacao(
+                arquivo=fonte.nome_arquivo,
+                hash_arquivo=_hash_pdf(fonte.caminho_local),
+                banco=fonte.banco or "generico",
+                qtd_transacoes=0,
+                status="descartado",
+                erro="todas as transacoes invalidas",
+            )
             continue
 
         arquivos_processados += 1
         transacoes_extraidas += len(df_normalizado)
         novos_frames.append(df_normalizado)
         registrar_processado(fonte.identificador, fonte.nome_arquivo, fonte.origem)
-        registrar_importacao(fonte.identificador, fonte.nome_arquivo, fonte.origem, "ok", f"{len(df_normalizado)} transacoes")
+        registrar_importacao(
+            arquivo=fonte.nome_arquivo,
+            hash_arquivo=_hash_pdf(fonte.caminho_local),
+            banco=fonte.banco or "generico",
+            qtd_transacoes=len(df_normalizado),
+            status="ok",
+            erro=f"{len(df_normalizado)} transacoes",
+        )
         logger.info("  ✓ %d transações extraídas com sucesso.", len(df_normalizado))
 
     logger.info("Processamento de arquivos concluído: %d arquivo(s) processado(s), %d transações extraídas.",
@@ -313,16 +349,6 @@ def run_pipeline(ano_referencia: int | None = None) -> None:
     # === CONSOLIDAR ===
     logger.info("\n[4/5] Consolidando dados...")
     existentes = _carregar_existentes()
-
-    if not existentes.empty:
-        data_existente = pd.to_datetime(existentes["data"], errors="coerce")
-        origem_google = existentes["origem"].astype(str).eq("google_sheets")
-        fora_abril_2026 = origem_google & ((data_existente.dt.year != 2026) | (data_existente.dt.month != 4))
-        removidas = int(fora_abril_2026.sum())
-        if removidas:
-            logger.info("Limpando %d transações antigas de Google Sheets fora de abril/2026.", removidas)
-            existentes = existentes.loc[~fora_abril_2026].copy()
-
     logger.info("Transações já registradas localmente: %d", len(existentes))
     
     combinado = pd.concat([existentes] + novos_frames, ignore_index=True)

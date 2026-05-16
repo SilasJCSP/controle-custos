@@ -98,7 +98,7 @@ except ImportError as e:
     sys.exit(1)
 
 try:
-    from parser import santander, mercado_pago, generico
+    from app.parsers import GenericoParser, MercadoPagoParser, SantanderParser
     print_ok("parsers (santander, mercado_pago, generico)")
 except ImportError as e:
     print_error(f"Falha ao importar parsers: {e}")

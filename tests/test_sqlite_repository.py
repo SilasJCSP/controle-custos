@@ -5,7 +5,7 @@ import importlib
 import pandas as pd
 
 import database.db as db_module
-from repositories import sqlite_repository as repo
+from app.repositories import sqlite_repository as repo
 
 
 def test_salvar_e_buscar_transacoes(tmp_path, monkeypatch):

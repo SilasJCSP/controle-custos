@@ -6,7 +6,7 @@ import pandas as pd
 
 from app.parsers.nubank import NubankParser
 from app.parsers.santander import SantanderParser
-from parser.base import extrair_transacoes_basicas, ParseContext
+from app.core.parsing import ParseContext, extrair_transacoes_basicas
 
 
 def test_extrair_transacoes_basicas():

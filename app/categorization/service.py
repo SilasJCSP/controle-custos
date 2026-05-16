@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from categorias_config import CATEGORIAS
-from repositories.sqlite_repository import buscar_categorias, salvar_categoria_usuario
+from app.repositories.sqlite_repository import buscar_categorias, salvar_categoria_usuario
 from utils.text import normalizar_descricao
 
 

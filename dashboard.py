@@ -19,7 +19,7 @@ ARQUIVO_TRANSACOES = BASE_DIR / "output" / "transacoes_categorizadas.csv"
 ARQUIVO_RESUMO = BASE_DIR / "output" / "gastos_consolidados.csv"
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def carregar_transacoes() -> pd.DataFrame:
     try:
         df_sqlite = buscar_transacoes()
@@ -54,7 +54,7 @@ def carregar_transacoes() -> pd.DataFrame:
     return df
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def carregar_resumo() -> pd.DataFrame:
     if not ARQUIVO_RESUMO.exists():
         return pd.DataFrame()
