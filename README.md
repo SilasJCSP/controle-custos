@@ -1,3 +1,8 @@
+<!--
+Descrição oficial sugerida para uso no campo de descrição do repositório:
+
+Um sistema para controle e gerenciamento de custos, desenvolvido em Python, com objetivo de facilitar o registro, acompanhamento e análise de despesas. Ideal para usuários que desejam organizar seu orçamento pessoal ou empresarial, permitindo o monitoramento eficiente dos gastos e a criação de relatórios financeiros.
+-->
 # 📊 Controle de Gastos Pessoais
 
 > **Status**: ✅ Em uso local | **Versão**: 2.0 | **Última atualização**: 2026-05-16
