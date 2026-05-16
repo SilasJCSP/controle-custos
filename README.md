@@ -31,17 +31,23 @@ pip install -r requirements.txt
 - `google_oauth_client.json` para OAuth (recomendado)
 - `credenciais.json` para service account
 
-### 3) Validar o ambiente
+### 3) Configurar o `.env`
+```bash
+cp .env.example .env
+# Edite .env e preencha DRIVE_FOLDER_ID e SHEETS_SPREADSHEET_ID
+```
+
+### 4) Validar o ambiente
 ```bash
 python validar_setup.py
 ```
 
-### 4) Executar o pipeline
+### 5) Executar o pipeline
 ```bash
 python main.py
 ```
 
-### 5) Abrir o dashboard
+### 6) Abrir o dashboard
 ```bash
 python -m streamlit run dashboard.py
 ```
@@ -133,13 +139,13 @@ Google Drive / dados/faturas → Detectar banco → Parse → Normalizar
 
 > Esses arquivos já estão listados no `.gitignore` e não devem ser commitados.
 
-### Variáveis opcionais
+### Variáveis de ambiente obrigatórias
 
-```bash
-GOOGLE_DRIVE_FOLDER_ID=1R-MoBZg3lqH8KPdFuRW_c-e_9ju63CQf
-GOOGLE_SHEETS_SPREADSHEET_ID=18SiI5PQF8Je1Bab8hkZorU_IDsrVhoY9qTgvRPdZvnI
-GOOGLE_AUTH_MODE=oauth
-```
+| Variável | Descrição |
+|---|---|
+| `DRIVE_FOLDER_ID` | ID da pasta Google Drive com as faturas |
+| `SHEETS_SPREADSHEET_ID` | ID da planilha Google Sheets |
+| `LIMITE_MENSAL_REAIS` | Limite mensal em R$ para alertas (0 = desativado) |
 
 ---
 
